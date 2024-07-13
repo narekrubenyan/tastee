@@ -5,6 +5,8 @@ import main
 
 favorite_foods_router = APIRouter(tags=["favorite_foods"], prefix="/favorite_foods")
 
+headers = {"X-Custom-Header": "Custom value"}
+
 
 @favorite_foods_router.post("/add_favorite_foods")
 def add_favorite_foods(user_id: int, food_id: int):
@@ -46,8 +48,10 @@ def add_favorite_foods(user_id: int, food_id: int):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": f"There was an error adding favorite food"
                                     f"ERROR: {error}"})
+
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Favorite food successfully added"})
+                        content={"message": "Favorite food successfully added"},
+                        headers=headers)
 
 
 @favorite_foods_router.delete("/delete_favorite_food/{favorite_food_d}")
@@ -74,8 +78,10 @@ def delete_favorite_food(favorite_food_id: int, user_id: int):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": f"An error occurred while deleting, please try again"
                                     f"ERROR: {error}"})
+
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Favorite food successfully deleted"})
+                        content={"message": "Favorite food successfully deleted"},
+                        headers=headers)
 
 
 @favorite_foods_router.get("/get_all_favorite_foods_by_user_id/{user_id}")
@@ -85,7 +91,8 @@ def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1,
     main.cursor.execute("SELECT count(*) FROM favorite_foods")
     count = main.cursor.fetchall()[0]['count']
     if count == 0:
-        return []
+        headers1 = {"X-Custom-Header": "Custom value"}
+        return JSONResponse(content=[], headers=headers1)
 
     max_page = (count - 1) // per_page + 1
 
@@ -113,24 +120,11 @@ def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1,
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"message": f"User with id {user_id} has no favorite foods"})
 
-    return {
+    content = {
         "favorite_foods": favorite_foods,
         "page": page,
         "total_pages": max_page,
         "total_foods": count
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return JSONResponse(content=content, headers=headers)

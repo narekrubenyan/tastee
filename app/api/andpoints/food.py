@@ -9,6 +9,8 @@ from schemas.shemas import UpdateFood
 
 food_router = APIRouter(tags=["food"], prefix="/food")
 
+headers = {"X-Custom-Header": "Custom value"}
+
 
 @food_router.post("/add_food/{restaurant_id}")
 def add_food(restaurant_id: int, kind: str = Form(...), price: int = Form(...),
@@ -35,7 +37,8 @@ def add_food(restaurant_id: int, kind: str = Form(...), price: int = Form(...),
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Food successfully added"})
+                        content={"message": "Food successfully added"},
+                        headers=headers)
 
 
 @food_router.put("/update_food/{food_id}")
@@ -69,7 +72,8 @@ def update_food(food_id: int, data: UpdateFood):
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Food updated successfully"})
+                        content={"message": "Food updated successfully"},
+                        headers=headers)
 
 
 @food_router.put("/update_images_foods/{food_id}")
@@ -96,7 +100,8 @@ def update_images(food_id, image_food: UploadFile = File(...)):
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Food images updated successfully"})
+                        content={"message": "Food images updated successfully"},
+                        headers=headers)
 
 
 @food_router.delete("/delete_food/{food_id}")
@@ -128,7 +133,8 @@ def delete_food(food_id: int):
                                     f"ERROR: {error}"})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Food successfully deleted"})
+                        content={"message": "Food successfully deleted"},
+                        headers=headers)
 
 
 @food_router.get("/get_food_by_id/{food_id}")
@@ -154,7 +160,8 @@ def get_food_by_id(food_id: int):
         raise HTTPException(status_code=404,
                             detail=f"Restaurant with id {food_id} was not found!")
 
-    return food
+    return JSONResponse(content=food,
+                        headers=headers)
 
 
 @food_router.get("/get_all_foods")
@@ -164,7 +171,9 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
     main.cursor.execute("SELECT count(*) FROM foods")
     count = main.cursor.fetchall()[0]['count']
     if count == 0:
-        return []
+        headers1 = {"X-Custom-Header": "Custom value"}
+        return JSONResponse(content=[],
+                            headers=headers1)
     max_page = (count - 1) // per_page + 1
 
     if page > max_page:
@@ -191,10 +200,12 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Foods were not found!")
 
-    return {
+    content = {
         "foods": foods,
         "page": page,
         "total_pages": max_page,
         "total_foods": count
     }
 
+    return JSONResponse(content=content,
+                        headers=headers)

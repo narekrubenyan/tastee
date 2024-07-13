@@ -7,6 +7,8 @@ from schemas.shemas import RestaurantWorkTimeAdd
 
 restaurant_work_time_router = APIRouter(tags=["Work Times"], prefix="/restaurant/work-time")
 
+headers = {"X-Custom-Header": "Custom value"}
+
 
 @restaurant_work_time_router.post("/add")
 def add_work_time(data: RestaurantWorkTimeAdd):
@@ -36,7 +38,8 @@ def add_work_time(data: RestaurantWorkTimeAdd):
         status_code=status.HTTP_201_CREATED,
         content={
             "message": "Work time added successfully"
-        }
+        },
+        headers=headers
     )
 
 
@@ -61,4 +64,5 @@ def get_restaurant_work_times(restaurant_id: int):
         }
     )
 
-    return times
+    return JSONResponse(content=times,
+                        headers=headers)

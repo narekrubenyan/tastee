@@ -60,7 +60,10 @@ app.add_middleware(
 
 @app.get("/")
 def main():
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "OK"})
+    headers = {"X-Custom-Header": "Custom value"}
+    return JSONResponse(status_code=status.HTTP_200_OK,
+                        content={"message": "OK"},
+                        headers=headers)
 
 
 app.include_router(food_router)

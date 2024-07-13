@@ -9,6 +9,8 @@ from schemas.shemas import UpdateRestaurant
 
 restaurant_router = APIRouter(tags=["restaurant"], prefix="/restaurant")
 
+headers = {"X-Custom-Header": "Custom value"}
+
 
 @restaurant_router.post("/add_restaurant")
 def add_restaurant(restaurant_name: str = Form(...), restaurant_email: str = Form(...), phone_number: str = Form(...),
@@ -43,7 +45,8 @@ def add_restaurant(restaurant_name: str = Form(...), restaurant_email: str = For
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Restaurant successfully added"})
+                        content={"message": "Restaurant successfully added"},
+                        headers=headers)
 
 
 @restaurant_router.put("/update_restaurant/{restaurant_id}")
@@ -77,7 +80,8 @@ def update_restaurant(restaurant_id: int, data: UpdateRestaurant):
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Restaurant updated successfully"})
+                        content={"message": "Restaurant updated successfully"},
+                        headers=headers)
 
 
 @restaurant_router.put("/update_images_restaurants/{restaurant_id}")
@@ -108,7 +112,8 @@ def update_images(restaurant_id, image_logo: UploadFile = File(...), image_backg
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Restaurant images updated successfully"})
+                        content={"message": "Restaurant images updated successfully"},
+                        headers=headers)
 
 
 @restaurant_router.delete("/delete_restaurant/{restaurant_id}")
@@ -139,7 +144,8 @@ def delete_restaurant(restaurant_id: int):
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Restaurant successfully deleted"})
+                        content={"message": "Restaurant successfully deleted"},
+                        headers=headers)
 
 
 @restaurant_router.get("/get_restaurant_by_id/{restaurant_id}")
@@ -165,7 +171,8 @@ def get_restaurant_by_id(restaurant_id: int):
         raise HTTPException(status_code=404,
                             detail=f"Restaurant with id {restaurant_id} was not found!")
 
-    return restaurant
+    return JSONResponse(content=restaurant,
+                        headers=headers)
 
 
 @restaurant_router.get("/get_all_restaurants")
@@ -175,7 +182,8 @@ def get_all_restaurants(page: int = Query(default=1, ge=1)):
     main.cursor.execute("SELECT count(*) FROM restaurants")
     count = main.cursor.fetchone()['count']
     if count == 0:
-        return []
+        return JSONResponse(content=[],
+                            headers=headers)
 
     max_page = (count - 1) // per_page + 1
 
@@ -200,9 +208,9 @@ def get_all_restaurants(page: int = Query(default=1, ge=1)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Restaurants were not found!")
 
-    return {
+    return JSONResponse(content={
         "restaurants": restaurants,
         "page": page,
         "total_pages": max_page,
         "total_restaurants": count
-    }
+        }, headers=headers)
