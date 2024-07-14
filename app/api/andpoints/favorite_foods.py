@@ -5,7 +5,10 @@ import main
 
 favorite_foods_router = APIRouter(tags=["favorite_foods"], prefix="/favorite_foods")
 
-headers = {"X-Custom-Header": "Custom value"}
+headers = {"Access-Control-Allow-Origin": "*",
+           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+           "Access-Control-Allow-Credentials": "true"}
 
 
 @favorite_foods_router.post("/add_favorite_foods")
@@ -91,7 +94,11 @@ def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1,
     main.cursor.execute("SELECT count(*) FROM favorite_foods")
     count = main.cursor.fetchall()[0]['count']
     if count == 0:
-        headers1 = {"X-Custom-Header": "Custom value"}
+        headers1 = {"Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Allow-Credentials": "true"}
+
         return JSONResponse(content=[], headers=headers1)
 
     max_page = (count - 1) // per_page + 1

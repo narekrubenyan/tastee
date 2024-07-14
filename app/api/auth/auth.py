@@ -15,7 +15,10 @@ from schemas.shemas import UserAdd, UserLogin
 
 auth_router = APIRouter(tags=["auth"], prefix="/auth")
 
-headers = {"X-Custom-Header": "Custom value"}
+headers = {"Access-Control-Allow-Origin": "*",
+           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+           "Access-Control-Allow-Credentials": "true"}
 
 
 @auth_router.get("/mail_verification/{email}")

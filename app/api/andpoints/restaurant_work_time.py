@@ -7,7 +7,10 @@ from schemas.shemas import RestaurantWorkTimeAdd
 
 restaurant_work_time_router = APIRouter(tags=["Work Times"], prefix="/restaurant/work-time")
 
-headers = {"X-Custom-Header": "Custom value"}
+headers = {"Access-Control-Allow-Origin": "*",
+           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+           "Access-Control-Allow-Credentials": "true"}
 
 
 @restaurant_work_time_router.post("/add")

@@ -9,7 +9,10 @@ from schemas.shemas import UpdateFood
 
 food_router = APIRouter(tags=["food"], prefix="/food")
 
-headers = {"X-Custom-Header": "Custom value"}
+headers = {"Access-Control-Allow-Origin": "*",
+           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+           "Access-Control-Allow-Credentials": "true"}
 
 
 @food_router.post("/add_food/{restaurant_id}")
@@ -171,7 +174,10 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
     main.cursor.execute("SELECT count(*) FROM foods")
     count = main.cursor.fetchall()[0]['count']
     if count == 0:
-        headers1 = {"X-Custom-Header": "Custom value"}
+        headers1 = {"Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Allow-Credentials": "true"}
         return JSONResponse(content=[],
                             headers=headers1)
     max_page = (count - 1) // per_page + 1

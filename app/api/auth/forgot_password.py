@@ -61,7 +61,10 @@ def reset_password(reset_data: PasswordReset):
 
     main.conn.commit()
 
-    headers = {"X-Custom-Header": "Custom value"}
+    headers = {"Access-Control-Allow-Origin": "*",
+               "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+               "Access-Control-Allow-Headers": "Content-Type, Authorization",
+               "Access-Control-Allow-Credentials": "true"}
 
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={"message": "Password changed successfully"},
