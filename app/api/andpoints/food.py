@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, APIRouter, UploadFile, File, Form, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import datetime
 import os
 import shutil
@@ -15,18 +15,18 @@ def add_food(restaurant_id: int, kind: str = Form(...), price: int = Form(...),
                    cook_time: int = Form(...), food_name: str = Form(...), description: str = Form(...),
                    image_food: UploadFile = File(...)):
 
-    current_date_time = (datetime.datetime.now().strftime('%B %d %Y - %H_%M_%S'))
-    image_food_url = f"{os.getcwd()}/static/images/food/{current_date_time}{image_food.filename}"
+    current_date_time = (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    food_image_name = f"food_image_{current_date_time}.{image_food.filename.split('.')[-1]}"
+
     try:
         main.cursor.execute("""INSERT INTO foods (kind, price, cook_time,
                         image, food_name, description, restaurant_id) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                            (kind, price, cook_time, image_food_url,
+                            (kind, price, cook_time, food_image_name,
                              food_name, description, restaurant_id))
 
         main.conn.commit()
 
-        with open(image_food_url, "wb") as file_object:
-
+        with open(f"{os.getcwd()}/static/images/food/{food_image_name}", "wb") as file_object:
             shutil.copyfileobj(image_food.file, file_object)
 
     except Exception as error:
@@ -105,13 +105,13 @@ def delete_food(food_id: int):
         main.cursor.execute("""SELECT * FROM foods WHERE food_id= %s""",
                             (food_id,))
 
-        target_restaurant = main.cursor.fetchone()
+        target_food = main.cursor.fetchone()
 
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
 
-    if target_restaurant is None:
+    if target_food is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Food not found")
 
@@ -126,6 +126,9 @@ def delete_food(food_id: int):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": "There was an error deleting the food"
                                     f"ERROR: {error}"})
+
+    if os.path.exists(target_food.get('image')):
+        os.remove(target_food.get('image'))
 
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={"message": "Food successfully deleted"})
@@ -198,3 +201,8 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
         "total_foods": count
     }
 
+
+@food_router.get("/get_image/{file}")
+def get_food_image(file: str):
+    path = f"{os.getcwd()}/static/images/food/{file}"
+    return FileResponse(path)

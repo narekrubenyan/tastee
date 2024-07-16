@@ -138,6 +138,12 @@ def delete_restaurant(restaurant_id: int):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
 
+    if os.path.exists(target_restaurant.get('logo')):
+        os.remove(target_restaurant.get('logo'))
+
+    if os.path.exists(target_restaurant.get('background_image')):
+        os.remove(target_restaurant.get('background_image'))
+
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={"message": "Restaurant successfully deleted"})
 
