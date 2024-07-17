@@ -223,4 +223,12 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
 @food_router.get("/get_image/{file}")
 def get_food_image(file: str):
     path = f"{os.getcwd()}/static/images/food/{file}"
-    return FileResponse(path)
+    if os.path.exists(path):
+        return FileResponse(path)
+    return JSONResponse(
+        headers=headers,
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "message": "File not found"
+        }
+    )
