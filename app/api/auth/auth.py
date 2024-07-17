@@ -15,6 +15,11 @@ from schemas.shemas import UserAdd, UserLogin
 
 auth_router = APIRouter(tags=["auth"], prefix="/auth")
 
+headers = {"Access-Control-Allow-Origin": "*",
+           "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+           "Access-Control-Allow-Credentials": "true"}
+
 
 @auth_router.get("/mail_verification/{email}")
 def verify_email(email: str):
@@ -43,7 +48,8 @@ def verify_email(email: str):
                             detail={"message": f"An error occurred while updating user data\n{error}"})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "You have successfully passed the verification"})
+                        content={"message": "You have successfully passed the verification"},
+                        headers=headers)
 
 
 @auth_router.post("/add-user")
@@ -94,7 +100,8 @@ def add_user(user_data: UserAdd):
     main.conn.commit()
 
     return JSONResponse(status_code=status.HTTP_201_CREATED,
-                        content={"Message": "You have successfully registered"})
+                        content={"Message": "You have successfully registered"},
+                        headers=headers)
 
 
 @auth_router.get("/get-one-user-by-id/{user_id}")
@@ -122,7 +129,8 @@ def get_user_by_id(user_id: int, current_user=Depends(security.get_current_user)
         raise HTTPException(status_code=404,
                             detail=f"User with id {user_id} was not found!")
 
-    return user
+    return JSONResponse(content=user,
+                        headers=headers)
 
 
 @auth_router.delete("/delete-user/{user_id}")
@@ -138,7 +146,8 @@ def delete_user(user_id: int, current_user=Depends(security.get_current_user)):
                             detail={"message": error})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Successfully deleted"})
+                        content={"message": "Successfully deleted"},
+                        headers=headers)
 
 
 @auth_router.post("/login")
@@ -177,7 +186,8 @@ def login(login_data: UserLogin):
                             "Message": "Successfully logged in! Your access token",
                             "access_token": access_token,
                             "user_id": user_id
-                        })
+                        },
+                        headers=headers)
 
 
 @auth_router.get("/get_all_users")
@@ -187,7 +197,8 @@ def get_all_users(page: int = Query(default=1, ge=1)):
     main.cursor.execute("SELECT count(*) FROM users")
     count = main.cursor.fetchall()[0]['count']
     if count == 0:
-        return []
+        return JSONResponse(content=[],
+                            headers=headers)
 
     max_page = (count - 1) // per_page + 1
 
@@ -218,10 +229,11 @@ def get_all_users(page: int = Query(default=1, ge=1)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Users were not found!")
 
-    return {
+    return JSONResponse(content={
         "users": users,
         "page": page,
         "total_pages": max_page,
         "total_users": count
-    }
+        },
+        headers=headers)
 

@@ -60,7 +60,9 @@ app.add_middleware(
 
 @app.get("/")
 def main():
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "OK"})
+
+    return JSONResponse(status_code=status.HTTP_200_OK,
+                        content={"message": "OK"})
 
 
 app.include_router(food_router)
