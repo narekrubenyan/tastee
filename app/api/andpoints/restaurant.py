@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, APIRouter, UploadFile, File, Form, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 import os
 import shutil
 import main
@@ -19,27 +19,24 @@ headers = {"Access-Control-Allow-Origin": "*",
 def add_restaurant(restaurant_name: str = Form(...), restaurant_email: str = Form(...), phone_number: str = Form(...),
                    address: str = Form(...), rating: float = Form(), image_logo: UploadFile = File(...),
                    image_background: UploadFile = File(...)):
-
-    current_date_time = (datetime.datetime.now().strftime('%B %d %Y - %H_%M_%S'))
-    image_logo_url = f"{os.getcwd()}/static/images/logo/{current_date_time}{image_logo.filename}"
-    image_background_url = f"{os.getcwd()}/static/images/background/{current_date_time}{image_background.filename}"
+    current_date_time = (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    logo_image_name = f"logo_image_{current_date_time}.{image_logo.filename.split('.')[-1]}"
+    background_image_name = f"background_image_{current_date_time}.{image_background.filename.split('.')[-1]}"
 
     try:
 
         main.cursor.execute("""INSERT INTO restaurants (restaurant_name, restaurant_email, phone_number,
                                         address, rating, background_image, logo) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                             (restaurant_name, restaurant_email,
-                             phone_number, address, rating, image_background_url,
-                             image_logo_url))
+                             phone_number, address, rating, background_image_name,
+                             logo_image_name))
 
         main.conn.commit()
 
-        with open(image_logo_url, "wb") as file_object:
-
+        with open(f"{os.getcwd()}/static/images/logo/{logo_image_name}", "wb") as file_object:
             shutil.copyfileobj(image_logo.file, file_object)
 
-        with open(image_background_url, "wb") as file_object:
-
+        with open(f"{os.getcwd()}/static/images/background/{background_image_name}", "wb") as file_object:
             shutil.copyfileobj(image_background.file, file_object)
 
     except Exception as error:
@@ -87,70 +84,111 @@ def update_restaurant(restaurant_id: int, data: UpdateRestaurant):
                         headers=headers)
 
 
-@restaurant_router.put("/update_images_restaurants/{restaurant_id}")
-def update_images(restaurant_id, image_logo: UploadFile = File(...), image_background: UploadFile = File(...)):
+@restaurant_router.put("/update_logo_restaurants/{restaurant_id}")
+def update_logo(restaurant_id, image_logo: UploadFile = File(...)):
 
-    current_date_time = (datetime.datetime.now().strftime('%B %d %Y - %H_%M_%S'))
-    image_logo_url = f"{os.getcwd()}/static/images/logo/{current_date_time}{image_logo.filename}"
-    image_background_url = f"{os.getcwd()}/static/images/background/{current_date_time}{image_background.filename}"
+    current_date_time = (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    logo_image_name = f"logo_image_{current_date_time}.{image_logo.filename.split('.')[-1]}"
 
     try:
-        main.cursor.execute("""UPDATE restaurants SET  logo = %s, background_image = %s   
-                                   WHERE restaurant_id = %s""",
-                            (image_logo_url, image_background_url, restaurant_id))
+        main.cursor.execute("""SELECT * FROM restaurants WHERE restaurant_id = %s""",
+                            (restaurant_id,))
+
+        target_restaurant = main.cursor.fetchone()
+
+        if target_restaurant is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+
+        old_image_logo = target_restaurant.get('logo')
+
+        main.cursor.execute("""UPDATE restaurants SET logo = %s WHERE restaurant_id = %s""",
+                            (logo_image_name, restaurant_id))
+        main.conn.commit()
+
+        logo_path = f"{os.getcwd()}/static/images/logo/"
+
+        if old_image_logo and os.path.exists(os.path.join(logo_path, old_image_logo)):
+            os.remove(os.path.join(logo_path, old_image_logo))
+
+        with open(os.path.join(logo_path, logo_image_name), "wb") as file_object:
+            shutil.copyfileobj(image_logo.file, file_object)
+
+    except Exception as error:
+        main.conn.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"message": str(error)})
+
+    return JSONResponse(status_code=status.HTTP_200_OK,
+                        content={"message": "Restaurant logo updated successfully"},
+                        headers=headers)
+
+
+@restaurant_router.put("/update_background_restaurants/{restaurant_id}")
+def update_background(restaurant_id, image_background: UploadFile = File(...)):
+    current_date_time = (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    background_image_name = f"background_image_{current_date_time}.{image_background.filename.split('.')[-1]}"
+
+    try:
+        main.cursor.execute("""SELECT * FROM restaurants WHERE restaurant_id = %s""",
+                            (restaurant_id,))
+
+        target_restaurant = main.cursor.fetchone()
+
+        if target_restaurant is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Restaurant not found")
+
+        old_image_background = target_restaurant.get('background_image')
+
+        main.cursor.execute("""UPDATE restaurants SET  background_image = %s WHERE restaurant_id = %s""",
+                            (background_image_name, restaurant_id))
 
         main.conn.commit()
 
-        with open(image_logo_url, "wb") as file_object:
+        background_path = f"{os.getcwd()}/static/images/background/"
 
-            shutil.copyfileobj(image_logo.file, file_object)
+        if old_image_background and os.path.exists(os.path.join(background_path, old_image_background)):
+            os.remove(os.path.join(background_path, old_image_background))
 
-        with open(image_background_url, "wb") as file_object:
-
+        with open(os.path.join(background_path, background_image_name), "wb") as file_object:
             shutil.copyfileobj(image_background.file, file_object)
 
     except Exception as error:
         main.conn.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": error})
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"message": str(error)})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Restaurant images updated successfully"},
+                        content={"message": "Restaurant background updated successfully"},
                         headers=headers)
 
 
 @restaurant_router.delete("/delete_restaurant/{restaurant_id}")
 def delete_restaurant(restaurant_id: int):
     try:
-        main.cursor.execute("""SELECT * FROM restaurants WHERE restaurant_id= %s""",
+        main.cursor.execute("""SELECT logo, background_image FROM restaurants WHERE restaurant_id = %s""",
                             (restaurant_id,))
-
         target_restaurant = main.cursor.fetchone()
 
-    except Exception as error:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": error})
+        if target_restaurant is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Restaurant not found")
 
-    if target_restaurant is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Restaurant not found")
-
-    try:
-        main.cursor.execute("""DELETE FROM restaurants WHERE restaurant_id=%s""",
+        main.cursor.execute("""DELETE FROM restaurants WHERE restaurant_id = %s""",
                             (restaurant_id,))
-
         main.conn.commit()
+
+        logo_path = os.path.join(os.getcwd(), "static", "images", "logo", target_restaurant.get('logo', ''))
+        background_path = os.path.join(os.getcwd(), "static", "images", "background",
+                                       target_restaurant.get('background_image', ''))
+
+        if os.path.exists(logo_path):
+            os.remove(logo_path)
+
+        if os.path.exists(background_path):
+            os.remove(background_path)
 
     except Exception as error:
         main.conn.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": error})
-
-    if os.path.exists(target_restaurant.get('logo')):
-        os.remove(target_restaurant.get('logo'))
-
-    if os.path.exists(target_restaurant.get('background_image')):
-        os.remove(target_restaurant.get('background_image'))
+                            detail={"message": str(error)})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={"message": "Restaurant successfully deleted"},
@@ -223,3 +261,31 @@ def get_all_restaurants(page: int = Query(default=1, ge=1)):
         "total_pages": max_page,
         "total_restaurants": count
         }, headers=headers)
+
+
+@restaurant_router.get("/get_logo/{logo_path}")
+def get_image_logo(logo_path: str):
+    path = f"{os.getcwd()}/static/images/logo/{logo_path}"
+    if os.path.exists(path):
+        return FileResponse(path)
+    return JSONResponse(
+        headers=headers,
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "message": "File not found"
+        }
+    )
+
+
+@restaurant_router.get("/get_background/{logo_path}")
+def get_image_background(background_path: str):
+    path = f"{os.getcwd()}/static/images/background/{background_path}"
+    if os.path.exists(path):
+        return FileResponse(path)
+    return JSONResponse(
+        headers=headers,
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "message": "File not found"
+        }
+    )
