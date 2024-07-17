@@ -219,6 +219,7 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
     return JSONResponse(content=content,
                         headers=headers)
 
+
 @food_router.get("/get_image/{file}")
 def get_food_image(file: str):
     path = f"{os.getcwd()}/static/images/food/{file}"
