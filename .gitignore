@@ -1,3 +1,5 @@
 .venv/
 venv/
 .idea/
+app/api/auth/__pycache__/__init__.cpython-312.pyc
+app/__pycache__/database.cpython-312.pyc

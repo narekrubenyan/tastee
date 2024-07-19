@@ -277,7 +277,7 @@ def get_image_logo(logo_path: str):
     )
 
 
-@restaurant_router.get("/get_background/{logo_path}")
+@restaurant_router.get("/get_background/{background_path}")
 def get_image_background(background_path: str):
     path = f"{os.getcwd()}/static/images/background/{background_path}"
     if os.path.exists(path):
