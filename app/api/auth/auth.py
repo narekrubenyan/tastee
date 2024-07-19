@@ -211,7 +211,7 @@ def get_all_users(page: int = Query(default=1, ge=1)):
     try:
 
         main.cursor.execute("""
-                   SELECT user_id, name, email, phone_number, address, status, created_at 
+                   SELECT user_id, name, email, phone_number, address, status 
                    FROM users LIMIT %s OFFSET %s""", (per_page, offset))
 
     except Exception as error:
