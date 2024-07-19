@@ -107,7 +107,8 @@ def add_user(user_data: UserAdd):
 @auth_router.get("/get-one-user-by-id/{user_id}")
 def get_user_by_id(user_id: int, current_user=Depends(security.get_current_user)):
     try:
-        main.cursor.execute("""SELECT * FROM users WHERE user_id=%s""",
+        main.cursor.execute("""SELECT user_id, name, email, phone_number, address, status, created_at 
+                   FROM users WHERE user_id=%s""",
                             (user_id,))
 
     except Exception as error:

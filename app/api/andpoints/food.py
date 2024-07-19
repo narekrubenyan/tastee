@@ -62,7 +62,7 @@ def update_food(food_id: int, data: UpdateFood):
 
     try:
         main.cursor.execute("""UPDATE foods SET  kind=%s, price=%s, 
-                            cook_time=%s, food_name=%s, description=%s   
+                            cook_time=%s, food_name=%s, description=%s,  
                             WHERE food_id = %s""",
                             (data.kind, data.price, data.cook_time,
                              data.food_name, data.description, food_id))
@@ -81,26 +81,39 @@ def update_food(food_id: int, data: UpdateFood):
 
 @food_router.put("/update_images_foods/{food_id}")
 def update_images(food_id, image_food: UploadFile = File(...)):
-
-    current_date_time = (datetime.datetime.now().strftime('%B %d %Y - %H_%M_%S'))
-    image_food_url = f"{os.getcwd()}/static/images/food/{current_date_time}{image_food.filename}"
-
+    current_date_time = (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    food_image_name = f"food_image_{current_date_time}.{image_food.filename.split('.')[-1]}"
 
     try:
-        main.cursor.execute("""UPDATE foods SET  image = %s   
-                                   WHERE food_id = %s""",
-                            (image_food_url, food_id))
+        main.cursor.execute("""SELECT * FROM foods WHERE food_id= %s""", (food_id,))
+        target_food = main.cursor.fetchone()
 
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+
+    if target_food is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Food not found")
+
+    old_image_path = target_food.get('image')
+
+    try:
+
+        main.cursor.execute("""UPDATE foods SET image = %s WHERE food_id = %s""",
+                            (food_image_name, food_id))
         main.conn.commit()
 
-        with open(image_food_url, "wb") as file_object:
+        if old_image_path and os.path.exists(f"{os.getcwd()}/static/images/food/{old_image_path}"):
+            os.remove(f"{os.getcwd()}/static/images/food/{old_image_path}")
 
+        with open(f"{os.getcwd()}/static/images/food/{food_image_name}", "wb") as file_object:
             shutil.copyfileobj(image_food.file, file_object)
 
     except Exception as error:
         main.conn.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": error})
+                            detail={"message": str(error)})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
                         content={"message": "Food images updated successfully"},

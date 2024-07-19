@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, text, Float, ARRAY, LargeBinary, Boolean
-from sqlalchemy.sql.sqltypes import TIMESTAMP, Time
+from sqlalchemy import Column, Integer, String, ForeignKey, text, Float, Boolean
+from sqlalchemy.sql.sqltypes import TIMESTAMP
 
 from database import Base
 
@@ -80,3 +80,10 @@ class Restaurant(Base):
     background_image = Column(String, nullable=False)
     rating = Column(Float, nullable=False)
 
+
+class FavoriteRestaurant(Base):
+    __tablename__ = "favorite_restaurant"
+
+    favorite_restaurant_id = Column(Integer, nullable=False, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"))
+    restaurant_id = Column(Integer, ForeignKey("foods.food_id"))
