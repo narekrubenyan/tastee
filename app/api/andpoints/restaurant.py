@@ -16,18 +16,20 @@ headers = {"Access-Control-Allow-Origin": "*",
 
 
 @restaurant_router.post("/add_restaurant")
-def add_restaurant(restaurant_name: str = Form(...), restaurant_email: str = Form(...), phone_number: str = Form(...),
+def add_restaurant(restaurant_name: str = Form(...), kind: str = Form(...), description: str = Form(...),
+                   restaurant_email: str = Form(...), phone_number: str = Form(...),
                    address: str = Form(...), rating: float = Form(), image_logo: UploadFile = File(...),
                    image_background: UploadFile = File(...)):
+
     current_date_time = (datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
     logo_image_name = f"logo_image_{current_date_time}.{image_logo.filename.split('.')[-1]}"
     background_image_name = f"background_image_{current_date_time}.{image_background.filename.split('.')[-1]}"
 
     try:
 
-        main.cursor.execute("""INSERT INTO restaurants (restaurant_name, restaurant_email, phone_number,
-                                        address, rating, background_image, logo) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                            (restaurant_name, restaurant_email,
+        main.cursor.execute("""INSERT INTO restaurants (restaurant_name, kind, description, restaurant_email, phone_number,
+                         address, rating, background_image, logo) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                            (restaurant_name, kind, description, restaurant_email,
                              phone_number, address, rating, background_image_name,
                              logo_image_name))
 

@@ -179,8 +179,7 @@ def get_food_by_id(food_id: int):
         raise HTTPException(status_code=404,
                             detail=f"Restaurant with id {food_id} was not found!")
 
-    return JSONResponse(content=food,
-                        headers=headers)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=food, headers=headers)
 
 
 @food_router.get("/get_all_foods")
@@ -189,13 +188,9 @@ def get_all_foods(page: int = Query(default=1, ge=1)):
 
     main.cursor.execute("SELECT count(*) FROM foods")
     count = main.cursor.fetchall()[0]['count']
+
     if count == 0:
-        headers1 = {"Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                    "Access-Control-Allow-Credentials": "true"}
-        return JSONResponse(content=[],
-                            headers=headers1)
+        return JSONResponse(status_code=status.HTTP_200_OK, content=[], headers=headers)
     max_page = (count - 1) // per_page + 1
 
     if page > max_page:
