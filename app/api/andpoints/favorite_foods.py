@@ -14,7 +14,7 @@ headers = {"Access-Control-Allow-Origin": "*",
 @favorite_foods_router.post("/add_favorite_foods")
 def add_favorite_foods(user_id: int, food_id: int):
     try:
-        main.cursor.execute("""SELECT * FROM users WHERE user_id = %s """,
+        main.cursor.execute("""SELECT * FROM users WHERE user_id = %s""",
                             (user_id,))
 
         user = main.cursor.fetchone()

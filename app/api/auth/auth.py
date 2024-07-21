@@ -136,7 +136,7 @@ def get_user_by_id(user_id: int, current_user=Depends(security.get_current_user)
 @auth_router.delete("/delete-user/{user_id}")
 def delete_user(user_id: int, current_user=Depends(security.get_current_user)):
     try:
-        main.cursor.execute("""delete from users where user_id=%s""",
+        main.cursor.execute("""DELETE FROM users WHERE user_id=%s""",
                             (user_id,))
 
         main.conn.commit()

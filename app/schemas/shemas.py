@@ -1,5 +1,5 @@
 # For Data Validations
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, conint
 
 
 class UserAdd(BaseModel):
@@ -47,3 +47,10 @@ class RestaurantWorkTimeAdd(BaseModel):
     day_of_week: str
     opening_time: str
     closing_time: str
+
+
+class AddCard(BaseModel):
+    card_number: int
+    card_valid_thru: str
+    card_name: str
+    card_cvv: int

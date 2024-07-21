@@ -21,10 +21,11 @@ class Card(Base):
     __tablename__ = "cards"
 
     card_id = Column(Integer, nullable=False, primary_key=True)
-    card_number = Column(Integer, nullable=False)
+    card_number = Column(Integer, nullable=False, unique=True)
     card_valid_thru = Column(String, nullable=False)  # "MM/YYYY"
     card_name = Column(String, nullable=False)
     card_cvv = Column(Integer, nullable=False)
+    status = Column(Boolean, nullable=False, server_default="False")
     user_id = Column(Integer, ForeignKey("users.user_id"))
 
 
