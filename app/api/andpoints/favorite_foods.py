@@ -13,6 +13,23 @@ headers = {"Access-Control-Allow-Origin": "*",
 
 @favorite_foods_router.post("/add_favorite_foods")
 def add_favorite_foods(user_id: int, food_id: int):
+
+    try:
+        main.cursor.execute("""SELECT food_id FROM favorite_foods WHERE
+                                food_id =%s AND user_id = %s""",
+                            (food_id, user_id))
+
+        target = main.cursor.fetchone()
+
+        if target:
+            return JSONResponse(status_code=status.HTTP_200_OK,
+                                content={"message": "The food is already on your list"},
+                                headers=headers)
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": str(error)})
+
     try:
         main.cursor.execute("""SELECT * FROM users WHERE user_id = %s """,
                             (user_id,))
@@ -57,24 +74,24 @@ def add_favorite_foods(user_id: int, food_id: int):
                         headers=headers)
 
 
-@favorite_foods_router.delete("/delete_favorite_food/{favorite_food_d}")
-def delete_favorite_food(favorite_food_id: int, user_id: int):
+@favorite_foods_router.delete("/delete_favorite_food/{food_id}")
+def delete_favorite_food(food_id: int, user_id: int):
     try:
-        main.cursor.execute("""SELECT * FROM favorite_foods WHERE favorite_food_id =%s AND user_id =%s""",
-                            (favorite_food_id, user_id))
+        main.cursor.execute("""SELECT * FROM favorite_foods WHERE food_id =%s AND user_id =%s""",
+                            (food_id, user_id))
 
-        favorite_food = main.cursor.fetchone()
+        food = main.cursor.fetchone()
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
 
-    if favorite_food is None:
+    if food is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail={"message": f"Favorite food by {favorite_food_id} id not found"})
+                            detail={"message": f"Favorite food by {food_id} id not found"})
 
     try:
-        main.cursor.execute("""DELETE FROM favorite_foods WHERE favorite_food_id = %s AND user_id =%s""",
-                            (favorite_food_id, user_id))
+        main.cursor.execute("""DELETE FROM favorite_foods WHERE food_id = %s AND user_id =%s""",
+                            (food_id, user_id))
 
         main.conn.commit()
     except Exception as error:

@@ -14,6 +14,21 @@ headers = {"Access-Control-Allow-Origin": "*",
 
 @favorite_restaurants_router.post("/add_favorite_restaurants")
 def add_favorite_restaurants(user_id: int, restaurant_id: int):
+
+    try:
+        main.cursor.execute("""SELECT restaurant_id FROM favorite_restaurants WHERE
+                                restaurant_id =%s AND user_id = %s""",
+                            (restaurant_id, user_id))
+
+        target = main.cursor.fetchone()
+        if target:
+            return JSONResponse(status_code=status.HTTP_200_OK,
+                                content={"message": "The restaurant is already on your list"},
+                                headers=headers)
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+
     try:
         main.cursor.execute("""SELECT * FROM users WHERE user_id = %s """,
                             (user_id,))
@@ -60,24 +75,24 @@ def add_favorite_restaurants(user_id: int, restaurant_id: int):
                         headers=headers)
 
 
-@favorite_restaurants_router.delete("/delete_favorite_restaurant/{favorite_restaurant_d}")
-def delete_favorite_restaurant(favorite_restaurant_id: int, user_id: int):
+@favorite_restaurants_router.delete("/delete_favorite_restaurant/{restaurant_id}")
+def delete_favorite_restaurant(restaurant_id: int, user_id: int):
     try:
-        main.cursor.execute("""SELECT * FROM favorite_restaurants WHERE favorite_restaurant_id =%s AND user_id =%s""",
-                            (favorite_restaurant_id, user_id))
+        main.cursor.execute("""SELECT * FROM favorite_restaurants WHERE restaurant_id =%s AND user_id =%s""",
+                            (restaurant_id, user_id))
 
-        favorite_restaurant = main.cursor.fetchone()
+        restaurant = main.cursor.fetchone()
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
 
-    if favorite_restaurant is None:
+    if restaurant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail={"message": f"Favorite restaurant by {favorite_restaurant_id} id not found"})
+                            detail={"message": f"Favorite restaurant by {restaurant_id} id not found"})
 
     try:
-        main.cursor.execute("""DELETE FROM favorite_restaurants WHERE favorite_restaurant_id = %s AND user_id =%s""",
-                            (favorite_restaurant_id, user_id))
+        main.cursor.execute("""DELETE FROM favorite_restaurants WHERE restaurant_id = %s AND user_id =%s""",
+                            (restaurant_id, user_id))
 
         main.conn.commit()
     except Exception as error:
@@ -108,9 +123,9 @@ def get_all_favorite_restaurants_by_user_id(user_id: int, page: int = Query(defa
     offset = (page - 1) * per_page
 
     try:
-        main.cursor.execute("""SELECT * FROM favorite_restaurants WHERE user_id =%s LIMIT %s OFFSET %s""",
+        main.cursor.execute("""SELECT user_id, restaurant_id 
+                FROM favorite_restaurants WHERE user_id =%s LIMIT %s OFFSET %s""",
                             (user_id, per_page, offset))
-
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": str(error)})

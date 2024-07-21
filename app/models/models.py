@@ -42,7 +42,7 @@ class FavoriteFood(Base):
 
     favorite_food_id = Column(Integer, nullable=False, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.user_id"))
-    food_id = Column(Integer, ForeignKey("foods.food_id"), unique=True)
+    food_id = Column(Integer, ForeignKey("foods.food_id"))
 
 
 class Food(Base):
@@ -88,4 +88,4 @@ class FavoriteRestaurant(Base):
 
     favorite_restaurant_id = Column(Integer, nullable=False, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.user_id"))
-    restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id"), unique=True)
+    restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id"))
