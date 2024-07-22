@@ -67,5 +67,4 @@ def get_restaurant_work_times(restaurant_id: int):
         }
     )
 
-    return JSONResponse(content=times,
-                        headers=headers)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=times, headers=headers)

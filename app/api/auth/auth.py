@@ -107,7 +107,7 @@ def add_user(user_data: UserAdd):
 @auth_router.get("/get-one-user-by-id/{user_id}")
 def get_user_by_id(user_id: int, current_user=Depends(security.get_current_user)):
     try:
-        main.cursor.execute("""SELECT user_id, name, email, phone_number, address, status, created_at 
+        main.cursor.execute("""SELECT user_id, name, email, phone_number, address, status
                    FROM users WHERE user_id=%s""",
                             (user_id,))
 
@@ -130,7 +130,7 @@ def get_user_by_id(user_id: int, current_user=Depends(security.get_current_user)
         raise HTTPException(status_code=404,
                             detail=f"User with id {user_id} was not found!")
 
-    return JSONResponse(content=user,
+    return JSONResponse(status_code=status.HTTP_200_OK, content=user,
                         headers=headers)
 
 
@@ -198,7 +198,7 @@ def get_all_users(page: int = Query(default=1, ge=1)):
     main.cursor.execute("SELECT count(*) FROM users")
     count = main.cursor.fetchall()[0]['count']
     if count == 0:
-        return JSONResponse(content=[],
+        return JSONResponse(status_code=status.HTTP_200_OK, content=[],
                             headers=headers)
 
     max_page = (count - 1) // per_page + 1
@@ -230,11 +230,12 @@ def get_all_users(page: int = Query(default=1, ge=1)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"Users were not found!")
 
-    return JSONResponse(content={
-        "users": users,
-        "page": page,
-        "total_pages": max_page,
-        "total_users": count
-        },
-        headers=headers)
+    return JSONResponse(status_code=status.HTTP_200_OK,
+                        content={
+                                "users": users,
+                                "page": page,
+                                "total_pages": max_page,
+                                "total_users": count
+                                },
+                        headers=headers)
 

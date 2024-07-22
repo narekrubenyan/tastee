@@ -1,9 +1,10 @@
+
 from fastapi import HTTPException, status, APIRouter, Query
 from fastapi.responses import JSONResponse
 
 import main
 
-favorite_foods_router = APIRouter(tags=["favorite_foods"], prefix="/favorite_foods")
+favorite_restaurants_router = APIRouter(tags=["favorite_restaurants"], prefix="/favorite_restaurants")
 
 headers = {"Access-Control-Allow-Origin": "*",
            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -11,24 +12,22 @@ headers = {"Access-Control-Allow-Origin": "*",
            "Access-Control-Allow-Credentials": "true"}
 
 
-@favorite_foods_router.post("/add_favorite_foods")
-def add_favorite_foods(user_id: int, food_id: int):
+@favorite_restaurants_router.post("/add_favorite_restaurants")
+def add_favorite_restaurants(user_id: int, restaurant_id: int):
 
     try:
-        main.cursor.execute("""SELECT food_id FROM favorite_foods WHERE
-                                food_id =%s AND user_id = %s""",
-                            (food_id, user_id))
+        main.cursor.execute("""SELECT restaurant_id FROM favorite_restaurants WHERE
+                                restaurant_id =%s AND user_id = %s""",
+                            (restaurant_id, user_id))
 
         target = main.cursor.fetchone()
-
         if target:
             return JSONResponse(status_code=status.HTTP_200_OK,
-                                content={"message": "The food is already on your list"},
+                                content={"message": "The restaurant is already on your list"},
                                 headers=headers)
-
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": str(error)})
+                            detail={"message": error})
 
     try:
         main.cursor.execute("""SELECT * FROM users WHERE user_id = %s """,
@@ -39,59 +38,61 @@ def add_favorite_foods(user_id: int, food_id: int):
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
+
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"message": f"User by {user_id} id not found"})
 
     try:
-        main.cursor.execute("""SELECT * FROM foods WHERE food_id = %s """,
-                            (food_id,))
+        main.cursor.execute("""SELECT * FROM restaurants WHERE restaurant_id = %s """,
+                            (restaurant_id,))
 
-        food = main.cursor.fetchone()
+        restaurant = main.cursor.fetchone()
 
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
-    if food is None:
+
+    if restaurant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail={"message": f"Food by {user_id} id not found"})
+                            detail={"message": f"Restaurants by {user_id} id not found"})
 
     try:
-        main.cursor.execute("""INSERT INTO favorite_foods (user_id, food_id) 
+        main.cursor.execute("""INSERT INTO favorite_restaurants (user_id, restaurant_id) 
                             VALUES (%s, %s)""",
-                            (user_id, food_id))
+                            (user_id, restaurant_id))
 
         main.conn.commit()
 
     except Exception as error:
         main.conn.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": f"There was an error adding favorite food"
+                            detail={"message": f"There was an error adding favorite restaurant"
                                     f"ERROR: {error}"})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Favorite food successfully added"},
+                        content={"message": "Favorite restaurant successfully added"},
                         headers=headers)
 
 
-@favorite_foods_router.delete("/delete_favorite_food/{food_id}")
-def delete_favorite_food(food_id: int, user_id: int):
+@favorite_restaurants_router.delete("/delete_favorite_restaurant/{restaurant_id}")
+def delete_favorite_restaurant(restaurant_id: int, user_id: int):
     try:
-        main.cursor.execute("""SELECT * FROM favorite_foods WHERE food_id =%s AND user_id =%s""",
-                            (food_id, user_id))
+        main.cursor.execute("""SELECT * FROM favorite_restaurants WHERE restaurant_id =%s AND user_id =%s""",
+                            (restaurant_id, user_id))
 
-        food = main.cursor.fetchone()
+        restaurant = main.cursor.fetchone()
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
 
-    if food is None:
+    if restaurant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail={"message": f"Favorite food by {food_id} id not found"})
+                            detail={"message": f"Favorite restaurant by {restaurant_id} id not found"})
 
     try:
-        main.cursor.execute("""DELETE FROM favorite_foods WHERE food_id = %s AND user_id =%s""",
-                            (food_id, user_id))
+        main.cursor.execute("""DELETE FROM favorite_restaurants WHERE restaurant_id = %s AND user_id =%s""",
+                            (restaurant_id, user_id))
 
         main.conn.commit()
     except Exception as error:
@@ -100,16 +101,17 @@ def delete_favorite_food(food_id: int, user_id: int):
                                     f"ERROR: {error}"})
 
     return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Favorite food successfully deleted"},
+                        content={"message": "Favorite restaurant successfully deleted"},
                         headers=headers)
 
 
-@favorite_foods_router.get("/get_all_favorite_foods_by_user_id/{user_id}")
-def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1, ge=1)):
+@favorite_restaurants_router.get("/get_all_favorite_restaurants_by_user_id/{user_id}")
+def get_all_favorite_restaurants_by_user_id(user_id: int, page: int = Query(default=1, ge=1)):
     per_page = 20
 
-    main.cursor.execute("SELECT count(*) FROM favorite_foods")
+    main.cursor.execute("SELECT count(*) FROM favorite_restaurants")
     count = main.cursor.fetchall()[0]['count']
+
     if count == 0:
         return JSONResponse(status_code=status.HTTP_200_OK, content=[], headers=headers)
 
@@ -121,30 +123,30 @@ def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1,
     offset = (page - 1) * per_page
 
     try:
-        main.cursor.execute("""SELECT user_id, food_id 
-        FROM favorite_foods WHERE user_id =%s LIMIT %s OFFSET %s""",
+        main.cursor.execute("""SELECT user_id, restaurant_id 
+                FROM favorite_restaurants WHERE user_id =%s LIMIT %s OFFSET %s""",
                             (user_id, per_page, offset))
-
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": str(error)})
 
     try:
-        favorite_foods = main.cursor.fetchall()
+        favorite_restaurants = main.cursor.fetchall()
 
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={f"An error occurred while searching for all favorite foods. ERROR {str(error)}"})
+                            detail=
+                            {f"An error occurred while searching for all favorite restaurants. ERROR {str(error)}"})
 
-    if not favorite_foods:
+    if not favorite_restaurants:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail={"message": f"User with id {user_id} has no favorite foods"})
+                            detail={"message": f"User with id {user_id} has no favorite restaurants"})
 
     content = {
-        "favorite_foods": favorite_foods,
+        "favorite_restaurants": favorite_restaurants,
         "page": page,
         "total_pages": max_page,
-        "total_foods": count
+        "total_restaurants": count
     }
 
     return JSONResponse(status_code=status.HTTP_200_OK, content=content, headers=headers)
