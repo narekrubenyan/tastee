@@ -41,9 +41,15 @@ class UpdateFood(BaseModel):
     restaurant_id: int
 
 
-
 class RestaurantWorkTimeAdd(BaseModel):
     restaurant_id: str
     day_of_week: str
     opening_time: str
     closing_time: str
+
+
+class AddCard(BaseModel):
+    card_number: int
+    card_valid_thru: str
+    card_name: str
+    card_cvv: int
