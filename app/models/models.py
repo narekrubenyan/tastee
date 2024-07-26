@@ -25,6 +25,7 @@ class Card(Base):
     card_valid_thru = Column(String, nullable=False)  # "MM/YYYY"
     card_name = Column(String, nullable=False)
     card_cvv = Column(Integer, nullable=False)
+    status = Column(bool, nullable=False, server_default="False")
     user_id = Column(Integer, ForeignKey("users.user_id"))
 
 
