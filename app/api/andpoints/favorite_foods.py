@@ -18,21 +18,29 @@ def add_favorite_foods(user_id: int, food_id: int):
         main.cursor.execute("""SELECT food_id FROM favorite_foods WHERE
                                 food_id =%s AND user_id = %s""",
                             (food_id, user_id))
-
-        target = main.cursor.fetchone()
-
-        if target:
-            return JSONResponse(status_code=status.HTTP_200_OK,
-                                content={"message": "The food is already on your list"},
-                                headers=headers)
-
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail={"message": str(error)})
+                            detail={"message": error})
+    try:
+
+        target = main.cursor.fetchone()
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+
+    if target:
+        return JSONResponse(status_code=status.HTTP_200_OK,
+                                content={"message": "The food is already on your list"},
+                                headers=headers)
 
     try:
         main.cursor.execute("""SELECT * FROM users WHERE user_id = %s """,
                             (user_id,))
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
 
         user = main.cursor.fetchone()
 
@@ -46,7 +54,10 @@ def add_favorite_foods(user_id: int, food_id: int):
     try:
         main.cursor.execute("""SELECT * FROM foods WHERE food_id = %s """,
                             (food_id,))
-
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
         food = main.cursor.fetchone()
 
     except Exception as error:
@@ -60,7 +71,10 @@ def add_favorite_foods(user_id: int, food_id: int):
         main.cursor.execute("""INSERT INTO favorite_foods (user_id, food_id) 
                             VALUES (%s, %s)""",
                             (user_id, food_id))
-
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
         main.conn.commit()
 
     except Exception as error:
@@ -79,6 +93,10 @@ def delete_favorite_food(food_id: int, user_id: int):
     try:
         main.cursor.execute("""SELECT * FROM favorite_foods WHERE food_id =%s AND user_id =%s""",
                             (food_id, user_id))
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
 
         food = main.cursor.fetchone()
     except Exception as error:
@@ -92,9 +110,13 @@ def delete_favorite_food(food_id: int, user_id: int):
     try:
         main.cursor.execute("""DELETE FROM favorite_foods WHERE food_id = %s AND user_id =%s""",
                             (food_id, user_id))
-
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
         main.conn.commit()
     except Exception as error:
+        main.conn.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": f"An error occurred while deleting, please try again"
                                     f"ERROR: {error}"})
@@ -107,9 +129,17 @@ def delete_favorite_food(food_id: int, user_id: int):
 @favorite_foods_router.get("/get_all_favorite_foods_by_user_id/{user_id}")
 def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1, ge=1)):
     per_page = 20
+    try:
+        main.cursor.execute("SELECT count(*) FROM favorite_foods")
 
-    main.cursor.execute("SELECT count(*) FROM favorite_foods")
-    count = main.cursor.fetchall()[0]['count']
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
+        count = main.cursor.fetchall()[0]['count']
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
     if count == 0:
         return JSONResponse(status_code=status.HTTP_200_OK, content=[], headers=headers)
 
@@ -121,7 +151,7 @@ def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1,
     offset = (page - 1) * per_page
 
     try:
-        main.cursor.execute("""SELECT user_id, food_id 
+        main.cursor.execute("""SELECT  food_id
         FROM favorite_foods WHERE user_id =%s LIMIT %s OFFSET %s""",
                             (user_id, per_page, offset))
 
@@ -140,11 +170,18 @@ def get_all_favorite_foods_by_user_id(user_id: int, page: int = Query(default=1,
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"message": f"User with id {user_id} has no favorite foods"})
 
-    content = {
-        "favorite_foods": favorite_foods,
+    food_ids = [food.get("food_id") for food in favorite_foods]
+
+    data = {
         "page": page,
         "total_pages": max_page,
         "total_foods": count
     }
 
+    content = {
+                "food_ids": food_ids,
+                "data": data
+            }
+
     return JSONResponse(status_code=status.HTTP_200_OK, content=content, headers=headers)
+
