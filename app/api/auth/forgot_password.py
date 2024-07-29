@@ -1,76 +1,125 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
-
+import random
 
 import main
 from services.service_email import send_email
 from schemas.shemas import PasswordReset
+from services.db_service import get_row, add_row
+from core import security
 
-forgot_router = APIRouter(tags=["forgot"], prefix="/forgot")
-
-subject = "Password Reset E-mail"
-URL = "http://127.0.0.1:8000/reset_password"
-
-body = f"""You're receiving this email because you or someone else has requested a password reset for your user account at.
-          Click the link below to reset your password:
-          {URL}
-
-          If you did not request a password reset you can safely ignore this emai
-          """
+forgot_router = APIRouter(tags=["Forgot password"], prefix="/password_reset")
 
 sender = "niddleproject@gmail.com"
-
-
-
 password = "ngzr kwsw jvcs oiae"
 
 
-@forgot_router.get("/forgot_password/{email}")
+@forgot_router.post("/request/{email}")
 def forgot_password(email):
-    main.cursor.execute("""SELECT * FROM users WHERE email=%s""",
-                        (email,))
+    try:
+        target_user = get_row("users",
+                              {"email": email})
 
-    target_user = main.cursor.fetchone()
+    except Exception as error:
+        main.conn.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
 
     if target_user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"User with email '{email}' was not found!")
 
-    else:
+    try:
+        code = random.randint(99999, 1000000)
+
+        subject = "Password Reset E-mail"
+
+        body = f"""You received this email because
+                    you or someone else has requested a password reset for your user account at.
+
+                    YOUR CODE
+                    {code}
+
+                    If you did not request a password reset you can safely ignore this emai
+                  """
         send_email(subject, body, sender, email, password)
 
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": "Mail service fail, please contact us",
+                                    "detail": str(error)})
 
-@forgot_router.post('/reset_password')
+    try:
+        add_row(table="password_reset",
+                data={"user_id": target_user.get('user_id'),
+                      "code": code})
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"detail": str(error)})
+
+    return JSONResponse(status_code=status.HTTP_200_OK,
+                        content={"message": "We sent you a personal CODE, please check your mail"})
+
+
+@forgot_router.post('/reset')
 def reset_password(reset_data: PasswordReset):
     if reset_data.new_password != reset_data.confirm_password:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail="You have entered incorrect information")
+                            detail="New password does not match")
 
-    email = reset_data.mail
-    main.cursor.execute("""SELECT * FROM users WHERE email =%s""",
-                        (email,))
+    try:
+        email = reset_data.mail
+        target_user = get_row("users",
+                              {"email": email})
 
-    user_data = main.cursor.fetchone()
+        if target_user is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"User with {email} was not found")
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": "Something went wrong",
+                                    "detail": str(error)})
 
-    if user_data is None:
+    try:
+        reset = get_row("password_reset",
+                        {"user_id": target_user.get('user_id')})
+
+        if reset is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail=f"User by {email} has nor request, please request to change password")
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": "Something went wrong",
+                                    "detail": str(error)})
+
+    if reset_data.code != reset.get("code"):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"User by {email} was nut found")
+                            detail=f"Your CODE is invalid")
 
-    main.cursor.execute("""UPDATE users SET password=%s WHERE email=%s""",
-                        (reset_data.new_password, email))
+    try:
+        hashed_password = security.hash_password(reset_data.new_password)
+        main.cursor.execute("""UPDATE users SET password=%s WHERE email=%s""",
+                            (hashed_password, email))
 
-    main.conn.commit()
+        main.conn.commit()
 
-    headers = {"Access-Control-Allow-Origin": "*",
-               "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-               "Access-Control-Allow-Headers": "Content-Type, Authorization",
-               "Access-Control-Allow-Credentials": "true"}
+        main.cursor.execute("""DELETE FROM password_reset WHERE user_id = %s AND code = %s""",
+                            (target_user.get('user_id'), reset_data.code))
 
-    return JSONResponse(status_code=status.HTTP_200_OK,
-                        content={"message": "Password changed successfully"},
-                        headers=headers)
+        main.conn.commit()
 
+        headers = {"Access-Control-Allow-Origin": "*",
+                   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                   "Access-Control-Allow-Credentials": "true"}
 
+        return JSONResponse(status_code=status.HTTP_200_OK,
+                            content={"message": "Password changed successfully"},
+                            headers=headers)
 
-
-
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": "Something went wrong",
+                                    "detail": str(error)})

@@ -19,8 +19,9 @@ class UserLogin(BaseModel):
 
 
 class PasswordReset(BaseModel):
-    new_password: str
     mail: str
+    code: int
+    new_password: str
     confirm_password: str
 
 
@@ -53,3 +54,8 @@ class AddCard(BaseModel):
     card_valid_thru: str
     card_name: str
     card_cvv: int
+
+
+class PasswordResset(BaseModel):
+    user_id: int
+    code: int

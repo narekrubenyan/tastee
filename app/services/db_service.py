@@ -18,7 +18,7 @@ def get_row(table: str, criteria: dict | None):
 
     main.cursor.execute(query, tuple(criteria.values()))
 
-    return main.cursor.fetchall()
+    return main.cursor.fetchone()
 
 
 def add_row(table: str, data: dict):
