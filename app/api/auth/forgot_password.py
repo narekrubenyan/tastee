@@ -69,7 +69,7 @@ def reset_password(reset_data: PasswordReset):
                             detail="New password does not match")
 
     try:
-        email = reset_data.mail
+        email = reset_data.email
         target_user = get_row("users",
                               {"email": email})
 

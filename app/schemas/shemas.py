@@ -19,7 +19,7 @@ class UserLogin(BaseModel):
 
 
 class PasswordReset(BaseModel):
-    mail: str
+    email: str
     code: int
     new_password: str
     confirm_password: str
