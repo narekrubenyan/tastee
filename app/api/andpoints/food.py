@@ -28,14 +28,21 @@ def add_food(restaurant_id: int, kind: str = Form(...), price: int = Form(...),
                         image, food_name, description, restaurant_id) VALUES (%s, %s, %s, %s, %s, %s, %s)""",
                             (kind, price, cook_time, food_image_name,
                              food_name, description, restaurant_id))
-
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=error)
+    try:
         main.conn.commit()
 
+    except Exception as error:
+        main.conn.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=error)
+    try:
         with open(f"{os.getcwd()}/static/images/food/{food_image_name}", "wb") as file_object:
             shutil.copyfileobj(image_food.file, file_object)
 
     except Exception as error:
-        main.conn.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
 
@@ -50,11 +57,12 @@ def update_food(food_id: int, data: UpdateFood):
         main.cursor.execute("""SELECT * FROM foods WHERE food_id= %s""",
                             (food_id,))
 
-        target_food = main.cursor.fetchone()
-
     except Exception as error:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail={"message": error})
+    target_food = main.cursor.fetchone()
+
+
 
     if target_food is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -66,6 +74,11 @@ def update_food(food_id: int, data: UpdateFood):
                             WHERE food_id = %s""",
                             (data.kind, data.price, data.cook_time,
                              data.food_name, data.description, food_id))
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+
+                            detail={"message": error})
+    try:
 
         main.conn.commit()
 
@@ -86,6 +99,12 @@ def update_images(food_id, image_food: UploadFile = File(...)):
 
     try:
         main.cursor.execute("""SELECT * FROM foods WHERE food_id= %s""", (food_id,))
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+
+                            detail={"message": error})
+    try:
         target_food = main.cursor.fetchone()
 
     except Exception as error:
@@ -102,7 +121,20 @@ def update_images(food_id, image_food: UploadFile = File(...)):
 
         main.cursor.execute("""UPDATE foods SET image = %s WHERE food_id = %s""",
                             (food_image_name, food_id))
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
+
         main.conn.commit()
+
+    except Exception as error:
+        main.conn.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+
+    try:
 
         if old_image_path and os.path.exists(f"{os.getcwd()}/static/images/food/{old_image_path}"):
             os.remove(f"{os.getcwd()}/static/images/food/{old_image_path}")
@@ -125,6 +157,10 @@ def delete_food(food_id: int):
     try:
         main.cursor.execute("""SELECT * FROM foods WHERE food_id= %s""",
                             (food_id,))
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
 
         target_food = main.cursor.fetchone()
 
@@ -139,7 +175,10 @@ def delete_food(food_id: int):
     try:
         main.cursor.execute("""DELETE FROM foods WHERE food_id=%s""",
                             (food_id,))
-
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
         main.conn.commit()
 
     except Exception as error:
@@ -185,9 +224,18 @@ def get_food_by_id(food_id: int):
 @food_router.get("/get_all_foods")
 def get_all_foods(page: int = Query(default=1, ge=1)):
     per_page = 20
+    try:
+        main.cursor.execute("SELECT count(*) FROM foods")
 
-    main.cursor.execute("SELECT count(*) FROM foods")
-    count = main.cursor.fetchall()[0]['count']
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail={"message": error})
+    try:
+        count = main.cursor.fetchall()[0]['count']
+
+    except Exception as error:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail={"message": error})
 
     if count == 0:
         return JSONResponse(status_code=status.HTTP_200_OK, content=[], headers=headers)
