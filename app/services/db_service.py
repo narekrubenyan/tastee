@@ -14,8 +14,6 @@ def get_row(table: str, criteria: dict | None):
             query += f" {key} = %s"
             i += 1
 
-    print(query, tuple(criteria.values()))
-
     main.cursor.execute(query, tuple(criteria.values()))
 
     return main.cursor.fetchone()
