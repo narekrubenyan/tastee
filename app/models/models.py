@@ -90,3 +90,11 @@ class FavoriteRestaurant(Base):
     favorite_restaurant_id = Column(Integer, nullable=False, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.user_id"))
     restaurant_id = Column(Integer, ForeignKey("restaurants.restaurant_id"))
+
+
+class RessetPassword(Base):
+    __tablename__ = "password_reset"
+
+    password_resset_id = Column(Integer, nullable=False, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"))
+    code = Column(Integer, nullable=False, unique=True)
