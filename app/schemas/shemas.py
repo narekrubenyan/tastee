@@ -54,8 +54,3 @@ class AddCard(BaseModel):
     card_valid_thru: str
     card_name: str
     card_cvv: int
-
-
-class PasswordResset(BaseModel):
-    user_id: int
-    code: int
